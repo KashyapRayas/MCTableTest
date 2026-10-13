@@ -291,7 +291,7 @@ export default function TableVariant() {
                       </TableCell>
                     )
                   })}
-                  <TableCell sx={{ p: '10px', border: 'none', width: ACTIONS_WIDTH }}>
+                  <TableCell sx={{ p: '10px', border: `1px solid ${tokens.border}`, width: ACTIONS_WIDTH }}>
                     <Box sx={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                       {isEditing ? (
                         <>
