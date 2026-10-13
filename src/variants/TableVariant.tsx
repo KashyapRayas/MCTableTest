@@ -51,7 +51,7 @@ type Editing = { id: number; draft: RecordRow; isNew: boolean }
 export default function TableVariant() {
   const [rows, setRows] = useState<RecordRow[]>(initialRows)
   const [editing, setEditing] = useState<Editing | null>(null)
-  // Kept separate from `open` so the dialog text doesn't change while it fades out.
+  // Kept separate from `open` so the row is still known while the dialog fades out.
   const [pendingDelete, setPendingDelete] = useState<RecordRow | null>(null)
   const [deleteOpen, setDeleteOpen] = useState(false)
 
@@ -195,7 +195,6 @@ export default function TableVariant() {
       </TableContainer>
       <DeleteRecordDialog
         open={deleteOpen}
-        recordName={pendingDelete?.code || undefined}
         onCancel={() => setDeleteOpen(false)}
         onConfirm={confirmDelete}
       />
