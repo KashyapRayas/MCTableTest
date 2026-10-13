@@ -1,4 +1,4 @@
-import { useMemo, useState, type KeyboardEvent } from 'react'
+import { useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import {
   Box,
   IconButton,
@@ -20,6 +20,34 @@ import { tokens } from '../theme'
 import arrowDownIcon from '../assets/arrow-down.svg'
 
 const ACTIONS_WIDTH = 80
+const MIN_COL_WIDTH = 60
+
+type ColumnWidths = Record<ColumnKey, number>
+
+// A thin line on the column's right edge; the wider transparent box is the drag target.
+const ResizeHandle = ({ onPointerDown }: { onPointerDown: (e: PointerEvent) => void }) => (
+  <Box
+    role="separator"
+    aria-orientation="vertical"
+    onPointerDown={onPointerDown}
+    onClick={(e) => e.stopPropagation()}
+    sx={{
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      width: 9,
+      display: 'flex',
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      cursor: 'col-resize',
+      touchAction: 'none',
+      zIndex: 1,
+      '&::after': { content: '""', width: '1px', height: 20, bgcolor: tokens.textMuted, transition: 'background-color 120ms' },
+      '&:hover::after, &.resizing::after': { bgcolor: tokens.textSubtle },
+    }}
+  />
+)
 
 const headCellSx = {
   height: 44,
@@ -84,6 +112,9 @@ export default function TableVariant() {
   const [rows, setRows] = useState<RecordRow[]>(initialRows)
   const [editing, setEditing] = useState<Editing | null>(null)
   const [sort, setSort] = useState<{ key: ColumnKey; order: SortOrder } | null>(null)
+  // null until the first resize: columns share the width evenly, then switch to fixed px widths.
+  const [widths, setWidths] = useState<ColumnWidths | null>(null)
+  const headCells = useRef<Partial<Record<ColumnKey, HTMLTableCellElement | null>>>({})
   // Kept separate from `open` so the row is still known while the dialog fades out.
   const [pendingDelete, setPendingDelete] = useState<RecordRow | null>(null)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -138,6 +169,37 @@ export default function TableVariant() {
     return [...pinned, ...rest]
   }, [rows, sort, editing])
 
+  const startResize = (key: ColumnKey) => (e: PointerEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const handle = e.currentTarget as HTMLElement
+    const start =
+      widths ??
+      (Object.fromEntries(
+        columns.map((c) => [c.key, headCells.current[c.key]?.getBoundingClientRect().width ?? MIN_COL_WIDTH]),
+      ) as ColumnWidths)
+    const startX = e.clientX
+
+    const onMove = (ev: globalThis.PointerEvent) =>
+      setWidths({ ...start, [key]: Math.max(MIN_COL_WIDTH, start[key] + ev.clientX - startX) })
+    const onUp = () => {
+      handle.classList.remove('resizing')
+      document.body.style.removeProperty('cursor')
+      document.body.style.removeProperty('user-select')
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+
+    handle.classList.add('resizing')
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+    setWidths(start)
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+
+  const tableWidth = widths ? Object.values(widths).reduce((a, b) => a + b, 0) + ACTIONS_WIDTH : '100%'
+
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Enter') save()
     if (e.key === 'Escape') discard()
@@ -147,13 +209,16 @@ export default function TableVariant() {
     <>
       <PageHeader onNewRecord={addRecord} />
       <TableContainer sx={{ flex: 1, minHeight: 0 }}>
-        <Table sx={{ tableLayout: 'fixed', borderCollapse: 'collapse', width: '100%' }}>
+        <Table sx={{ tableLayout: 'fixed', borderCollapse: 'collapse', width: tableWidth }}>
           <TableHead>
             <TableRow>
               {columns.map((c) => (
                 <TableCell
                   key={c.key}
-                  sx={{ ...headCellSx, px: 0 }}
+                  ref={(el) => {
+                    headCells.current[c.key] = el as HTMLTableCellElement | null
+                  }}
+                  sx={{ ...headCellSx, px: 0, position: 'relative', ...(widths && { width: widths[c.key] }) }}
                   sortDirection={sort?.key === c.key ? sort.order : false}
                 >
                   <TableSortLabel
@@ -167,6 +232,7 @@ export default function TableVariant() {
                       {c.label}
                     </Box>
                   </TableSortLabel>
+                  <ResizeHandle onPointerDown={startResize(c.key)} />
                 </TableCell>
               ))}
               <TableCell sx={{ ...headCellSx, width: ACTIONS_WIDTH, textAlign: 'center' }}>Actions</TableCell>
