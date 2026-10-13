@@ -208,7 +208,17 @@ export default function TableVariant() {
   return (
     <>
       <PageHeader onNewRecord={addRecord} />
-      <TableContainer sx={{ flex: 1, minHeight: 0 }}>
+      <TableContainer
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          scrollbarColor: `${tokens.primary} transparent`,
+          // Older WebKit ignores scrollbar-color, so style the bar directly there too.
+          '&::-webkit-scrollbar': { height: 8, width: 8 },
+          '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
+          '&::-webkit-scrollbar-thumb': { bgcolor: tokens.primary, borderRadius: 4 },
+        }}
+      >
         <Table sx={{ tableLayout: 'fixed', borderCollapse: 'collapse', width: tableWidth }}>
           <TableHead>
             <TableRow>
