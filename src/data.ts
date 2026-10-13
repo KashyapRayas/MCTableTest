@@ -89,3 +89,31 @@ export const touch = (r: RecordRow): RecordRow => ({
   ...r,
   updated_at: new Date().toLocaleString('en-AU'),
 })
+
+export type SortOrder = 'asc' | 'desc'
+
+const DATE_KEYS: ColumnKey[] = ['created_at', 'updated_at']
+
+// Dates are stored as en-AU display strings ("28/2/2026, 2:53:14 pm"), so they
+// need parsing to sort chronologically rather than alphabetically.
+const parseDate = (s: string) => {
+  const m = s.match(/^(\d+)\/(\d+)\/(\d+),\s*(\d+):(\d+):(\d+)\s*(am|pm)?/i)
+  if (!m) return NaN
+  const [, d, mo, y, h, mi, sec, ampm] = m
+  let hours = Number(h) % (ampm ? 12 : 24)
+  if (ampm?.toLowerCase() === 'pm') hours += 12
+  return new Date(+y, +mo - 1, +d, hours, +mi, +sec).getTime()
+}
+
+const isBlank = (v: string) => v.trim() === '' || v === '-'
+
+export const compareRows = (key: ColumnKey, order: SortOrder) => (a: RecordRow, b: RecordRow) => {
+  const av = a[key]
+  const bv = b[key]
+  // Empty values always sink to the bottom, whichever direction is active.
+  if (isBlank(av) || isBlank(bv)) return Number(isBlank(av)) - Number(isBlank(bv))
+  const diff = DATE_KEYS.includes(key)
+    ? parseDate(av) - parseDate(bv)
+    : av.localeCompare(bv, undefined, { numeric: true, sensitivity: 'base' })
+  return order === 'asc' ? diff : -diff
+}

@@ -11,8 +11,8 @@ export const tokens = {
   textMuted: '#606479',
   textNav: '#717481',
   textSubtle: '#b1b5c9',
-  danger: '#e02424',
-  dangerHover: '#c81e1e',
+  danger: '#d61f1f',
+  dangerHover: '#b81a1a',
   avatarBorder: '#606479',
 }
 
