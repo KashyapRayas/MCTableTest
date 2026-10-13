@@ -55,7 +55,9 @@ const SortArrow = ({ className }: { className?: string }) => (
       height: 18,
       flexShrink: 0,
       bgcolor: 'currentColor',
-      mask: `url(${arrowDownIcon}) center / contain no-repeat`,
+      // Quoted: Vite inlines small SVGs as data URIs, which break an unquoted url().
+      mask: `url("${arrowDownIcon}") center / contain no-repeat`,
+      WebkitMask: `url("${arrowDownIcon}") center / contain no-repeat`,
     }}
   />
 )
