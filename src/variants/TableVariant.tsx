@@ -72,7 +72,7 @@ const sortLabelSx = {
   '&:hover, &:focus-visible': { color: tokens.textSubtle },
   '&:hover .MuiTableSortLabel-icon, &:focus-visible .MuiTableSortLabel-icon': { opacity: 1 },
   '&.Mui-active': { color: tokens.text },
-  '&.Mui-active .MuiTableSortLabel-icon': { opacity: 1, color: tokens.primaryLight },
+  '&.Mui-active .MuiTableSortLabel-icon': { opacity: 1, color: tokens.textMuted },
   '& .MuiTableSortLabel-iconDirectionDesc': { transform: 'rotate(180deg)' },
 }
 
